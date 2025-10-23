@@ -1,0 +1,362 @@
+@page "/support-list"
+@using SupportTicketApp.Models
+@using SupportTicketApp.Services
+@inject ISupportTicketService SupportTicketService
+@rendermode InteractiveServer
+
+<PageTitle>Support Henvendelser</PageTitle>
+
+<div class="page-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="page-title">Support Henvendelser</h1>
+                    <p class="page-subtitle">Administrer og følg op på alle support henvendelser</p>
+                </div>
+                <a href="/create-support" class="btn btn-primary">
+                    <i class="bi bi-plus me-2"></i>Opret Henvendelse
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Board Container -->
+    <div class="board-container">
+        @if (isLoading)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Indlæser...</span>
+                </div>
+                <p class="text-muted mt-3">Indlæser henvendelser...</p>
+            </div>
+        }
+        else if (tickets?.Any() == true)
+        {
+            <div class="board-columns">
+                <!-- Open Tickets -->
+                <div class="board-column">
+                    <div class="board-column-header">
+                        <i class="bi bi-clock me-2"></i>Åbne (@(tickets.Count(t => t.Status == "open")))
+                    </div>
+                    <div class="board-column-body">
+                        @foreach (var ticket in tickets.Where(t => t.Status == "open").OrderByDescending(t => t.CreatedDate))
+                        {
+                            <div class="board-card" @onclick="@(() => ShowTicketDetails(ticket))">
+                                <div class="board-card-title">@ticket.Subject</div>
+                                <div class="board-card-meta">
+                                    <div>@ticket.CustomerName</div>
+                                    <div>@ticket.CreatedDate.ToString("dd/MM/yyyy")</div>
+                                </div>
+                                <div class="board-card-footer">
+                                    <span class="badge @GetPriorityBadgeClass(ticket.Priority)">
+                                        @GetPriorityText(ticket.Priority)
+                                    </span>
+                                    <span class="text-muted small">@ticket.Id.Substring(0, 8)...</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- In Progress Tickets -->
+                <div class="board-column">
+                    <div class="board-column-header">
+                        <i class="bi bi-arrow-right-circle me-2"></i>I Gang (@(tickets.Count(t => t.Status == "in-progress")))
+                    </div>
+                    <div class="board-column-body">
+                        @foreach (var ticket in tickets.Where(t => t.Status == "in-progress").OrderByDescending(t => t.CreatedDate))
+                        {
+                            <div class="board-card" @onclick="@(() => ShowTicketDetails(ticket))">
+                                <div class="board-card-title">@ticket.Subject</div>
+                                <div class="board-card-meta">
+                                    <div>@ticket.CustomerName</div>
+                                    <div>@ticket.CreatedDate.ToString("dd/MM/yyyy")</div>
+                                </div>
+                                <div class="board-card-footer">
+                                    <span class="badge @GetPriorityBadgeClass(ticket.Priority)">
+                                        @GetPriorityText(ticket.Priority)
+                                    </span>
+                                    <span class="text-muted small">@ticket.Id.Substring(0, 8)...</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Resolved Tickets -->
+                <div class="board-column">
+                    <div class="board-column-header">
+                        <i class="bi bi-check-circle me-2"></i>Løst (@(tickets.Count(t => t.Status == "resolved")))
+                    </div>
+                    <div class="board-column-body">
+                        @foreach (var ticket in tickets.Where(t => t.Status == "resolved").OrderByDescending(t => t.CreatedDate))
+                        {
+                            <div class="board-card" @onclick="@(() => ShowTicketDetails(ticket))">
+                                <div class="board-card-title">@ticket.Subject</div>
+                                <div class="board-card-meta">
+                                    <div>@ticket.CustomerName</div>
+                                    <div>@ticket.CreatedDate.ToString("dd/MM/yyyy")</div>
+                                </div>
+                                <div class="board-card-footer">
+                                    <span class="badge @GetPriorityBadgeClass(ticket.Priority)">
+                                        @GetPriorityText(ticket.Priority)
+                                    </span>
+                                    <span class="text-muted small">@ticket.Id.Substring(0, 8)...</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Closed Tickets -->
+                <div class="board-column">
+                    <div class="board-column-header">
+                        <i class="bi bi-x-circle me-2"></i>Lukket (@(tickets.Count(t => t.Status == "closed")))
+                    </div>
+                    <div class="board-column-body">
+                        @foreach (var ticket in tickets.Where(t => t.Status == "closed").OrderByDescending(t => t.CreatedDate))
+                        {
+                            <div class="board-card" @onclick="@(() => ShowTicketDetails(ticket))">
+                                <div class="board-card-title">@ticket.Subject</div>
+                                <div class="board-card-meta">
+                                    <div>@ticket.CustomerName</div>
+                                    <div>@ticket.CreatedDate.ToString("dd/MM/yyyy")</div>
+                                </div>
+                                <div class="board-card-footer">
+                                    <span class="badge @GetPriorityBadgeClass(ticket.Priority)">
+                                        @GetPriorityText(ticket.Priority)
+                                    </span>
+                                    <span class="text-muted small">@ticket.Id.Substring(0, 8)...</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-inbox text-muted mb-3" style="font-size: 4rem;"></i>
+                <h4 class="text-muted mb-3">Ingen henvendelser fundet</h4>
+                <p class="text-muted mb-4">Der er endnu ikke oprettet nogen support henvendelser.</p>
+                <a href="/create-support" class="btn btn-primary">
+                    <i class="bi bi-plus me-2"></i>Opret første henvendelse
+                </a>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Modal for ticket details -->
+@if (selectedTicket != null)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-ticket-detailed me-2"></i>
+                        Henvendelse Detaljer
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="@(() => selectedTicket = null)"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Ticket Header -->
+                    <div class="row mb-4">
+                        <div class="col-md-8">
+                            <h4 class="text-dark mb-2">@selectedTicket.Subject</h4>
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="badge @GetPriorityBadgeClass(selectedTicket.Priority)">
+                                    @GetPriorityText(selectedTicket.Priority)
+                                </span>
+                                <span class="badge badge-secondary">
+                                    @GetCategoryText(selectedTicket.Category)
+                                </span>
+                                <span class="badge @GetStatusBadgeClass(selectedTicket.Status)">
+                                    @GetStatusText(selectedTicket.Status)
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="text-muted small">Ticket ID:</div>
+                            <code>@selectedTicket.Id</code>
+                        </div>
+                    </div>
+
+                    <!-- Customer Info -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <i class="bi bi-person me-2"></i>Kunde Information
+                                </div>
+                                <div class="card-body">
+                                    <div class="fw-bold">@selectedTicket.CustomerName</div>
+                                    <div class="text-muted">@selectedTicket.Email</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <i class="bi bi-calendar me-2"></i>Tidsinformation
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-2">
+                                        <strong>Oprettet:</strong> @selectedTicket.CreatedDate.ToString("dd/MM/yyyy HH:mm")
+                                    </div>
+                                    @if (selectedTicket.UpdatedDate.HasValue)
+                                    {
+                                        <div>
+                                            <strong>Opdateret:</strong> @selectedTicket.UpdatedDate.Value.ToString("dd/MM/yyyy HH:mm")
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="mb-4">
+                        <h6 class="text-primary mb-3">
+                            <i class="bi bi-chat-text me-2"></i>Beskrivelse
+                        </h6>
+                        <div class="card">
+                            <div class="card-body">
+                                <p class="mb-0">@selectedTicket.Description</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resolution -->
+                    @if (!string.IsNullOrEmpty(selectedTicket.Resolution))
+                    {
+                        <div class="mb-4">
+                            <h6 class="text-success mb-3">
+                                <i class="bi bi-check-circle me-2"></i>Løsning
+                            </h6>
+                            <div class="card">
+                                <div class="card-body">
+                                    <p class="mb-0">@selectedTicket.Resolution</p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Assigned To -->
+                    @if (!string.IsNullOrEmpty(selectedTicket.AssignedTo))
+                    {
+                        <div class="mb-4">
+                            <h6 class="text-info mb-3">
+                                <i class="bi bi-person-check me-2"></i>Tildelt til
+                            </h6>
+                            <div class="card">
+                                <div class="card-body">
+                                    <span class="badge badge-info">@selectedTicket.AssignedTo</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="@(() => selectedTicket = null)">
+                        <i class="bi bi-x-circle me-2"></i>Luk
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    private List<SupportTicket>? tickets;
+    private bool isLoading = true;
+    private SupportTicket? selectedTicket;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            tickets = (await SupportTicketService.GetAllTicketsAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            // Handle error silently for now
+            tickets = new List<SupportTicket>();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ShowTicketDetails(SupportTicket ticket)
+    {
+        selectedTicket = ticket;
+    }
+
+    private string GetPriorityBadgeClass(string priority)
+    {
+        return priority switch
+        {
+            "low" => "badge-secondary",
+            "medium" => "badge-primary",
+            "high" => "badge-warning",
+            "critical" => "badge-danger",
+            _ => "badge-secondary"
+        };
+    }
+
+    private string GetPriorityText(string priority)
+    {
+        return priority switch
+        {
+            "low" => "Lav",
+            "medium" => "Medium",
+            "high" => "Høj",
+            "critical" => "Kritisk",
+            _ => priority
+        };
+    }
+
+    private string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "open" => "badge-warning",
+            "in-progress" => "badge-primary",
+            "resolved" => "badge-success",
+            "closed" => "badge-secondary",
+            _ => "badge-secondary"
+        };
+    }
+
+    private string GetStatusText(string status)
+    {
+        return status switch
+        {
+            "open" => "Åben",
+            "in-progress" => "I Gang",
+            "resolved" => "Løst",
+            "closed" => "Lukket",
+            _ => status
+        };
+    }
+
+    private string GetCategoryText(string category)
+    {
+        return category switch
+        {
+            "support" => "Support",
+            "bug" => "Fejl",
+            "feature" => "Feature",
+            "question" => "Spørgsmål",
+            _ => category
+        };
+    }
+}

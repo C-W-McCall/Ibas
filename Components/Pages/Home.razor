@@ -1,0 +1,211 @@
+﻿@page "/"
+@using SupportTicketApp.Models
+@using SupportTicketApp.Services
+@inject ISupportTicketService SupportTicketService
+@rendermode InteractiveServer
+
+<PageTitle>Support System</PageTitle>
+
+<div class="page-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="container">
+            <h1 class="page-title">Support Dashboard</h1>
+            <p class="page-subtitle">Administrer og følg op på support henvendelser</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Quick Actions -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="bi bi-lightning me-2"></i>Hurtige Handlinger
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex gap-3 flex-wrap">
+                            <a href="/create-support" class="btn btn-primary">
+                                <i class="bi bi-plus me-2"></i>Opret Henvendelse
+                            </a>
+                            <a href="/support-list" class="btn btn-secondary">
+                                <i class="bi bi-list-ul me-2"></i>Se Alle Henvendelser
+                            </a>
+                            <button class="btn btn-outline-primary">
+                                <i class="bi bi-download me-2"></i>Eksporter Data
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Overview -->
+        <div class="row mb-4">
+            <div class="col-md-3 col-6 mb-3">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-ticket-detailed text-primary mb-2" style="font-size: 2rem;"></i>
+                        <div class="fw-bold text-primary" style="font-size: 2rem;">@(tickets?.Count() ?? 0)</div>
+                        <div class="text-muted">Total Tickets</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-3">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-clock text-warning mb-2" style="font-size: 2rem;"></i>
+                        <div class="fw-bold text-warning" style="font-size: 2rem;">@(tickets?.Count(t => t.Status == "open") ?? 0)</div>
+                        <div class="text-muted">Åbne</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-3">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-check-circle text-success mb-2" style="font-size: 2rem;"></i>
+                        <div class="fw-bold text-success" style="font-size: 2rem;">@(tickets?.Count(t => t.Status == "resolved") ?? 0)</div>
+                        <div class="text-muted">Løst</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-3">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-exclamation-triangle text-danger mb-2" style="font-size: 2rem;"></i>
+                        <div class="fw-bold text-danger" style="font-size: 2rem;">@(tickets?.Count(t => t.Priority == "critical") ?? 0)</div>
+                        <div class="text-muted">Kritiske</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Tickets -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-clock-history me-2"></i>Seneste Henvendelser</span>
+                        <a href="/support-list" class="btn btn-sm btn-outline-primary">Se Alle</a>
+                    </div>
+                    <div class="card-body p-0">
+                        @if (recentTickets?.Any() == true)
+                        {
+                            <div class="table-responsive">
+                                <table class="table mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Kunde</th>
+                                            <th>Emne</th>
+                                            <th>Prioritet</th>
+                                            <th>Status</th>
+                                            <th>Oprettet</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var ticket in recentTickets.Take(5))
+                                        {
+                                            <tr>
+                                                <td><code>@ticket.Id.Substring(0, 8)...</code></td>
+                                                <td>@ticket.CustomerName</td>
+                                                <td>@ticket.Subject</td>
+                                                <td>
+                                                    <span class="badge @GetPriorityBadgeClass(ticket.Priority)">
+                                                        @GetPriorityText(ticket.Priority)
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span class="badge @GetStatusBadgeClass(ticket.Status)">
+                                                        @GetStatusText(ticket.Status)
+                                                    </span>
+                                                </td>
+                                                <td>@ticket.CreatedDate.ToString("dd/MM/yyyy")</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center p-4">
+                                <i class="bi bi-inbox text-muted mb-3" style="font-size: 3rem;"></i>
+                                <p class="text-muted mb-0">Ingen henvendelser endnu</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<SupportTicket>? tickets;
+    private List<SupportTicket>? recentTickets;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            tickets = (await SupportTicketService.GetAllTicketsAsync()).ToList();
+            recentTickets = tickets?.OrderByDescending(t => t.CreatedDate).ToList();
+        }
+        catch (Exception ex)
+        {
+            // Handle error silently for now
+            tickets = new List<SupportTicket>();
+            recentTickets = new List<SupportTicket>();
+        }
+    }
+
+    private string GetPriorityBadgeClass(string priority)
+    {
+        return priority switch
+        {
+            "low" => "badge-secondary",
+            "medium" => "badge-primary",
+            "high" => "badge-warning",
+            "critical" => "badge-danger",
+            _ => "badge-secondary"
+        };
+    }
+
+    private string GetPriorityText(string priority)
+    {
+        return priority switch
+        {
+            "low" => "Lav",
+            "medium" => "Medium",
+            "high" => "Høj",
+            "critical" => "Kritisk",
+            _ => priority
+        };
+    }
+
+    private string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "open" => "badge-warning",
+            "in-progress" => "badge-primary",
+            "resolved" => "badge-success",
+            "closed" => "badge-secondary",
+            _ => "badge-secondary"
+        };
+    }
+
+    private string GetStatusText(string status)
+    {
+        return status switch
+        {
+            "open" => "Åben",
+            "in-progress" => "I Gang",
+            "resolved" => "Løst",
+            "closed" => "Lukket",
+            _ => status
+        };
+    }
+}

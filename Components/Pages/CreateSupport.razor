@@ -1,0 +1,188 @@
+@page "/create-support"
+@using SupportTicketApp.Models
+@using SupportTicketApp.Services
+@inject ISupportTicketService SupportTicketService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Opret Henvendelse</PageTitle>
+
+<div class="page-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="container">
+            <h1 class="page-title">Opret Support Henvendelse</h1>
+            <p class="page-subtitle">Opret en ny support henvendelse med detaljerede oplysninger</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="bi bi-plus-circle me-2"></i>Henvendelse Information
+                    </div>
+                    <div class="card-body">
+                        <EditForm Model="ticket" OnValidSubmit="HandleValidSubmit">
+                            <DataAnnotationsValidator />
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-floating">
+                                        <InputText @bind-Value="ticket.CustomerName" class="form-control" placeholder="Kunde navn" />
+                                        <label>Kunde navn *</label>
+                                        <ValidationMessage For="@(() => ticket.CustomerName)" class="text-danger small" />
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-floating">
+                                        <InputText @bind-Value="ticket.Email" class="form-control" placeholder="Email" />
+                                        <label>Email *</label>
+                                        <ValidationMessage For="@(() => ticket.Email)" class="text-danger small" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-floating">
+                                    <InputText @bind-Value="ticket.Subject" class="form-control" placeholder="Emne" />
+                                    <label>Emne *</label>
+                                    <ValidationMessage For="@(() => ticket.Subject)" class="text-danger small" />
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Prioritet *</label>
+                                    <InputSelect @bind-Value="ticket.Priority" class="form-control">
+                                        <option value="low">Lav</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="high">Høj</option>
+                                        <option value="critical">Kritisk</option>
+                                    </InputSelect>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Kategori *</label>
+                                    <InputSelect @bind-Value="ticket.Category" class="form-control">
+                                        <option value="support">Support</option>
+                                        <option value="bug">Fejl</option>
+                                        <option value="feature">Feature</option>
+                                        <option value="question">Spørgsmål</option>
+                                    </InputSelect>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label">Beskrivelse *</label>
+                                <InputTextArea @bind-Value="ticket.Description" class="form-control" rows="6" placeholder="Beskriv dit problem eller spørgsmål i detaljer..." />
+                                <ValidationMessage For="@(() => ticket.Description)" class="text-danger small" />
+                            </div>
+
+                            <div class="d-flex gap-3">
+                                <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                                    @if (isSubmitting)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-check-circle me-2"></i>
+                                    }
+                                    @(isSubmitting ? "Opretter..." : "Opret Henvendelse")
+                                </button>
+                                <a href="/" class="btn btn-secondary">
+                                    <i class="bi bi-arrow-left me-2"></i>Annuller
+                                </a>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <!-- Help Card -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <i class="bi bi-question-circle me-2"></i>Hjælp
+                    </div>
+                    <div class="card-body">
+                        <h6 class="text-primary mb-3">Hvordan opretter jeg en henvendelse?</h6>
+                        <ol class="small text-muted">
+                            <li>Udfyld alle påkrævede felter</li>
+                            <li>Vælg passende prioritet og kategori</li>
+                            <li>Beskriv problemet så detaljeret som muligt</li>
+                            <li>Klik på "Opret Henvendelse"</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <!-- Priority Guide -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <i class="bi bi-flag me-2"></i>Prioritet Guide
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <span class="badge badge-danger me-2">Kritisk</span>
+                            <small class="text-muted">System nede, kritiske fejl</small>
+                        </div>
+                        <div class="mb-3">
+                            <span class="badge badge-warning me-2">Høj</span>
+                            <small class="text-muted">Vigtige problemer</small>
+                        </div>
+                        <div class="mb-3">
+                            <span class="badge badge-primary me-2">Medium</span>
+                            <small class="text-muted">Almindelige problemer</small>
+                        </div>
+                        <div class="mb-3">
+                            <span class="badge badge-secondary me-2">Lav</span>
+                            <small class="text-muted">Spørgsmål, forslag</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Info -->
+                <div class="card">
+                    <div class="card-header">
+                        <i class="bi bi-telephone me-2"></i>Kontakt
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center">
+                            <i class="bi bi-headset text-primary mb-2" style="font-size: 2rem;"></i>
+                            <h6>Support Team</h6>
+                            <p class="text-muted small mb-0">
+                                Vi svarer normalt inden for 24 timer
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private SupportTicket ticket = new();
+    private bool isSubmitting = false;
+
+    private async Task HandleValidSubmit()
+    {
+        isSubmitting = true;
+        try
+        {
+            await SupportTicketService.CreateTicketAsync(ticket);
+            Navigation.NavigateTo("/support-list");
+        }
+        catch (Exception ex)
+        {
+            // Handle error - in a real app, you'd show a proper error message
+            Console.WriteLine($"Error creating ticket: {ex.Message}");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+}
