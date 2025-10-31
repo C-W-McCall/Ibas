@@ -16,14 +16,15 @@ public class CosmosDbSupportTicketService : ISupportTicketService
 {
     private readonly CosmosClient _cosmosClient;
     private readonly Container _container;
-    private const string DatabaseId = "IBasSupportDB";
-    private const string ContainerId = "ibassupport";
 
     public CosmosDbSupportTicketService(IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("CosmosDB");
+        var databaseId = configuration["CosmosDb:DatabaseId"] ?? "IBasSupportDB";
+        var containerId = configuration["CosmosDb:ContainerId"] ?? "ibassupport";
+        
         _cosmosClient = new CosmosClient(connectionString);
-        _container = _cosmosClient.GetContainer(DatabaseId, ContainerId);
+        _container = _cosmosClient.GetContainer(databaseId, containerId);
     }
 
     public async Task<SupportTicket> CreateTicketAsync(SupportTicket ticket)
